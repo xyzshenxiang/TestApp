@@ -7,15 +7,15 @@
     <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
 
     <application
-        android:name="com.xs.testapp.TestApplication"
+        android:name=".TestApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="xiang.shen"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
-        <activity android:name="com.xs.testapp.MainActivity" android:theme="@style/StartStyle">
+        <activity android:name=".watermark.WaterMarkActivity"></activity>
+        <activity android:name=".ui.WelcomeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,8 +23,13 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.xs.testapp.Tip"
-            android:theme="@style/dialog_style"></activity>
+            android:name=".MainActivity"
+            android:theme="@style/StartStyle">
+
+        </activity>
+        <activity
+            android:name=".Tip"
+            android:theme="@style/dialog_style" />
     </application>
 
 </manifest>

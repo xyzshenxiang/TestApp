@@ -9,8 +9,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
@@ -29,12 +27,8 @@ import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
 import com.liulishuo.okdownload.core.listener.DownloadListener4WithSpeed;
 import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
-import com.xs.testapp.watermark.WaterMarkBg;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -62,25 +56,6 @@ public class MainActivity extends AppCompatActivity {
         FragmentTransaction ft = fm.beginTransaction();
         ft.add(R.id.fl_container,mFragment);
         ft.commit();
-
-        show();
-    }
-
-    private void show() {
-
-        SimpleDateFormat createTimeSdf1 = new SimpleDateFormat("yyyy-MM-dd");
-
-        List<String> labels = new ArrayList<>();
-        labels.add("用户名：张三");
-        labels.add("日期："+ createTimeSdf1.format(new Date()));
-        labels.add("不可扩散");
-
-        ViewGroup rootView = findViewById(android.R.id.content);
-        FrameLayout layout = new FrameLayout(this);
-        layout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
-        layout.setBackground(new WaterMarkBg(MainActivity.this,labels,-30,13));
-        rootView.addView(layout);
     }
 
     Fragment mFragment = new MainFragment();
