@@ -15,7 +15,6 @@ import androidx.annotation.Nullable;
  */
 public class Custom extends View {
 
-
     public Custom(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         mScroller = new Scroller(context);
@@ -51,7 +50,7 @@ public class Custom extends View {
                     lastmy = y;
                 }
 //                ((View)getParent()).scrollBy(-offsetx,-offsety);
-//                layout(getLeft() + offsetx, getTop() + offsety, getRight() + offsetx, getBottom() + offsety);
+                layout(getLeft() + offsetx, getTop() + offsety, getRight() + offsetx, getBottom() + offsety);
                 break;
             }
         }

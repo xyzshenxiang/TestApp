@@ -51,14 +51,8 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("getLargeMemoryClass", String.valueOf(ac.getLargeMemoryClass()));
         showDeviceInfo();
-
-        FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-        ft.add(R.id.fl_container,mFragment);
-        ft.commit();
     }
 
-    Fragment mFragment = new MainFragment();
 
     public void showDeviceInfo() {
         Point outSize = new Point();

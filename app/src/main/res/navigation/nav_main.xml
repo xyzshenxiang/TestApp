@@ -7,22 +7,28 @@
 
     <fragment
         android:id="@+id/oneFragment"
-        android:name="com.xs.testapp.OneFragment"
+        android:name="com.xs.testapp.ui.navigation.OneFragment"
         android:label="fragment_one"
         tools:layout="@layout/fragment_one" />
     <fragment
         android:id="@+id/twoFragment"
-        android:name="com.xs.testapp.TwoFragment"
+        android:name="com.xs.testapp.ui.navigation.TwoFragment"
         android:label="fragment_two"
         tools:layout="@layout/fragment_two" />
     <fragment
         android:id="@+id/threeFragment"
-        android:name="com.xs.testapp.ThreeFragment"
+        android:name="com.xs.testapp.ui.navigation.ThreeFragment"
         android:label="fragment_three"
         tools:layout="@layout/fragment_three" />
     <fragment
         android:id="@+id/fourFragment"
-        android:name="com.xs.testapp.FourFragment"
+        android:name="com.xs.testapp.ui.navigation.FourFragment"
         android:label="fragment_four"
         tools:layout="@layout/fragment_four" />
+
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="com.xs.testapp.ui.camera.CameraFragment"
+        android:label="fragment_camera"
+        tools:layout="@layout/fragment_camera" />
 </navigation>

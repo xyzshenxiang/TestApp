@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".TwoFragment">
+    tools:context=".ui.navigation.TwoFragment">
 
     <!-- TODO: Update blank fragment layout -->
     <TextView
@@ -17,10 +17,27 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="back" />
+
     <com.xs.testapp.Custom
-        android:id="@+id/cv"
+        android:id="@+id/custom"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@android:color/holo_red_dark"/>
+        android:background="@android:color/holo_red_dark" />
+
+    <LinearLayout
+        android:layout_width="80dp"
+        android:layout_height="300dp"
+        android:layout_marginLeft="150dp">
+
+        <com.xs.testapp.ui.customview.ChildModeScrollView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@android:color/holo_blue_light" />
+    </LinearLayout>
+
+    <com.xs.testapp.ui.customview.ChildModeArrowView
+        android:id="@+id/cma_arrow"
+        android:layout_width="50dp"
+        android:layout_height="300dp"/>
 
 </LinearLayout>
