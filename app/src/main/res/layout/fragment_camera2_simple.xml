@@ -43,8 +43,17 @@
         android:id="@+id/surface_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/iv_image"
         app:layout_constraintTop_toBottomOf="@id/btn_open" />
+
+    <TextureView
+        android:id="@+id/tv_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/iv_image"
+        app:layout_constraintTop_toBottomOf="@id/btn_open" />
+
 
     <ImageView
         android:id="@+id/iv_image"

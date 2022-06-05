@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="take"
-        app:layout_constraintLeft_toRightOf="@id/btn_open"
+        app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_title" />
 
     <Button
@@ -34,9 +34,8 @@
     <com.otaliastudios.cameraview.CameraView
         android:id="@+id/camera_view"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="200dp"
         android:keepScreenOn="true"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_open" />
+        app:layout_constraintTop_toBottomOf="@id/btn_take" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

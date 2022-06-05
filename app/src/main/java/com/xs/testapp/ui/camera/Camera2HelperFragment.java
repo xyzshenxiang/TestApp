@@ -1,9 +1,14 @@
 package com.xs.testapp.ui.camera;
 
+import android.graphics.Matrix;
+import android.graphics.RectF;
+import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -37,31 +42,57 @@ public class Camera2HelperFragment extends BaseFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         mBinding = FragmentCamera2SimpleBinding.inflate(inflater, container, false);
         LogUtils.d("onCreateView");
-        mSurfaceView = mBinding.surfaceView;
-        mSurfaceHolder = mSurfaceView.getHolder();
-        Camera2Helper.getInstance().setPreviewSurface(mSurfaceHolder.getSurface());
+//        mSurfaceView = mBinding.surfaceView;
+//        mSurfaceHolder = mSurfaceView.getHolder();
 
-        mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
+        int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
+//        Camera2Helper.getInstance().setPreviewSurface(mSurfaceHolder.getSurface());
+
+//        mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
+//            @Override
+//            public void surfaceCreated(SurfaceHolder surfaceHolder) {
+//
+//                Camera2Helper.getInstance().open();
+//            }
+//
+//            @Override
+//            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+//
+//            }
+//
+//            @Override
+//            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+//                Camera2Helper.getInstance().close();
+//            }
+//        });
+        Camera2Helper.getInstance().setTextureView(mBinding.tvView);
+        mBinding.tvView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
-            public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
-                Camera2Helper.getInstance().open();
+            public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
+//                configureTextureViewTransform(mBinding.tvView.getWidth(),mBinding.tvView.getHeight());
+//                Camera2Helper.getInstance().setPreviewSurface(new Surface(mBinding.tvView.getSurfaceTexture()));
+                Camera2Helper.getInstance().open(width,height);
             }
 
             @Override
-            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+            public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
 
             }
 
             @Override
-            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-                Camera2Helper.getInstance().close();
+            public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+
             }
         });
 
         mBinding.btnOpen.setOnClickListener(v -> {
 
-            Camera2Helper.getInstance().startPreview();
+//            Camera2Helper.getInstance().startPreview();
         });
         mBinding.btnTake.setOnClickListener(view -> {
 
@@ -102,4 +133,29 @@ public class Camera2HelperFragment extends BaseFragment {
         });
         return mBinding.getRoot();
     }
+
+    private void configureTextureViewTransform(int viewWidth, int viewHeight) {
+        if (null == mBinding.tvView) {
+            return;
+        }
+        int rotation = 0 ;/*activity.getWindowManager().getDefaultDisplay().getRotation();*/
+        Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+//        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+//        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+//            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+//            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+//            float scale = Math.max(
+//                    (float) viewHeight / mPreviewSize.getHeight(),
+//                    (float) viewWidth / mPreviewSize.getWidth());
+//            matrix.postScale(scale, scale, centerX, centerY);
+//            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+//        }else if (Surface.ROTATION_180 == rotation) {
+            matrix.postRotate(180, centerX, centerY);
+//        }
+        mBinding.tvView.setTransform(matrix);
+    }
+
 }

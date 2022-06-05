@@ -3,12 +3,17 @@ package com.xs.testapp.ui.camera;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.RectF;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
@@ -16,7 +21,9 @@ import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Size;
 import android.view.Surface;
+import android.view.TextureView;
 
 import androidx.annotation.NonNull;
 
@@ -28,6 +35,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -59,7 +69,7 @@ public class Camera2Helper {
     /**
      * 摄像头id
      */
-    private String mCameraId;
+    private String mCameraId = null;
 
     private CameraDevice mCamera;
 
@@ -76,6 +86,11 @@ public class Camera2Helper {
     private String mRecordVideoPath;
 
     private Surface mPreviewSurface;
+
+    private TextureView mTextureView;
+
+    private Size mPreviewSize;
+    private Size mCaptureSize;
     /**
      * 当前相机状态
      */
@@ -130,8 +145,8 @@ public class Camera2Helper {
         closeCamera();
     }
 
-    public void open() {
-        openCamera();
+    public void open(int width, int height) {
+        openCamera(width,height);
     }
 
     public void close() {
@@ -142,7 +157,7 @@ public class Camera2Helper {
      * 打开摄像头
      */
     @SuppressLint("MissingPermission")
-    private void openCamera() {
+    private void openCamera(int width, int height) {
 
         stopBackgroundThread();
         startBackgroundThread();
@@ -150,6 +165,22 @@ public class Camera2Helper {
         getCameraId();
 
         try {
+
+            CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraId);
+
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+            //预览尺寸
+            mPreviewSize = getOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height);
+            //照片大小
+            mCaptureSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new Comparator<Size>() {
+                @Override
+                public int compare(Size lhs, Size rhs) {
+                    return Long.signum(lhs.getWidth() * lhs.getHeight() - rhs.getHeight() * rhs.getWidth());
+                }
+            });
+
+            configureTransform(mTextureView, width,height);
             mCameraManager.openCamera(mCameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
@@ -180,6 +211,7 @@ public class Camera2Helper {
             }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+
         }
     }
 
@@ -218,11 +250,12 @@ public class Camera2Helper {
     public void takePicture() {
 
         mState = STATE_PICTURE_TAKEN;
-        try {
-            bindTakeSession();
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
+        capturePicture();
+//        try {
+//            bindTakeSession();
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void takeVideo() {
@@ -252,6 +285,10 @@ public class Camera2Helper {
         if (null == mCamera) {
             return;
         }
+        SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
+        surfaceTexture.setDefaultBufferSize(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+
+        mPreviewSurface = new Surface(surfaceTexture);
 
         if (null != mCameraCaptureSession) {
             mCameraCaptureSession.stopRepeating();
@@ -259,16 +296,20 @@ public class Camera2Helper {
             mCameraCaptureSession.close();
         }
 
+        setupImageReader();
+
         mOutputs.clear();
         if (null != mPreviewSurface) {
             mOutputs.add(mPreviewSurface);
         }
+        mOutputs.add(mImageReader.getSurface());
+
         mCamera.createCaptureSession(mOutputs,
                 new CameraCaptureSession.StateCallback() {
                     @Override
                     public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                         mCameraCaptureSession = cameraCaptureSession;
-                        showPreview();
+                        repeatPreview();
                     }
 
                     @Override
@@ -279,7 +320,7 @@ public class Camera2Helper {
 
     }
 
-    public void showPreview() {
+    public void repeatPreview() {
         if (null == mCamera) {
             return;
         }
@@ -309,17 +350,10 @@ public class Camera2Helper {
             mCameraCaptureSession.close();
         }
 
-        mImageReader = ImageReader.newInstance(720, 1280, ImageFormat.JPEG, 3);
-        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-            @Override
-            public void onImageAvailable(ImageReader imageReader) {
-                File file = new File(mTakePicturePath);
-                Image image = imageReader.acquireNextImage();
-                mBackgroundHandler.post(new ImageSaveRunnable(image, file));
-            }
-        }, mBackgroundHandler);
         mOutputs.clear();
-//        mOutputs.add(mPreviewSurface);
+        if (null != mPreviewSurface) {
+            mOutputs.add(mPreviewSurface);
+        }
         mOutputs.add(mImageReader.getSurface());
 
         mCamera.createCaptureSession(mOutputs,
@@ -340,25 +374,49 @@ public class Camera2Helper {
 
     }
 
+    private void setupImageReader() {
+        mImageReader = ImageReader.newInstance(mCaptureSize.getWidth(), mCaptureSize.getHeight(), ImageFormat.JPEG, 3);
+        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader imageReader) {
+                File file = new File(mTakePicturePath);
+                Image image = imageReader.acquireNextImage();
+                mBackgroundHandler.post(new ImageSaveRunnable(image, file));
+            }
+        }, mBackgroundHandler);
+    }
     private void capturePicture() {
         if (null == mCamera) {
             return;
         }
 
         try {
+            //首先我们创建请求拍照的CaptureRequest
             CaptureRequest.Builder captureRequestBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 
+            captureRequestBuilder.addTarget(mPreviewSurface);
             captureRequestBuilder.addTarget(mImageReader.getSurface());
-
+            // 自动对焦
             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            // 自动曝光
             captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
             //获取手机方向
-//            int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 270);
 
-            CaptureRequest captureRequest = captureRequestBuilder.build();
-            mCameraCaptureSession.capture(captureRequest, null, mBackgroundHandler);
+            //设置拍照方向
+            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 180);
+
+            //停止预览
+            mCameraCaptureSession.stopRepeating();
+
+            //开始拍照，然后回调上面的接口重启预览，因为mCaptureBuilder设置ImageReader作为target，所以会自动回调ImageReader的onImageAvailable()方法保存图片
+            CameraCaptureSession.CaptureCallback captureCallback = new CameraCaptureSession.CaptureCallback() {
+                @Override
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                    repeatPreview();
+                }
+            };
+            mCameraCaptureSession.capture(captureRequestBuilder.build(), captureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -457,11 +515,12 @@ public class Camera2Helper {
         try {
             for (String cmid : mCameraManager.getCameraIdList()) {
 
-                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cmid);
-                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (null != facing && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    continue;
-                }
+//                CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cmid);
+//                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+//                if (null != facing && facing == CameraCharacteristics.LENS_FACING_FRONT) {
+//                    mCameraId = cmid;
+//                    return;
+//                }
                 mCameraId = cmid;
                 return;
             }
@@ -476,7 +535,19 @@ public class Camera2Helper {
     private void startBackgroundThread() {
         mBackgroundThread = new HandlerThread("CameraBackground");
         mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        mBackgroundHandler = new Handler(mBackgroundThread.getLooper()){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case NOTICE_CAMERA_OPEN:{
+                        startPreview();
+                        break;
+                    }
+                }
+
+            }
+        };
     }
 
     /**
@@ -518,12 +589,104 @@ public class Camera2Helper {
         this.mPreviewSurface = mPreviewSurface;
     }
 
+    public void setTextureView(TextureView mTextureView) {
+        this.mTextureView = mTextureView;
+    }
+
     public void addSurface(@NonNull Surface surface) {
         mOutputs.add(surface);
     }
 
     public void clearSurface() {
         mOutputs.clear();
+    }
+
+    //选择sizeMap中大于并且最接近width和height的size
+    private Size getOptimalSize(Size[] sizeMap, int width, int height) {
+        List<Size> sizeList = new ArrayList<>();
+        for (Size option : sizeMap) {
+            if (width > height) {
+                if (option.getWidth() > width && option.getHeight() > height) {
+                    sizeList.add(option);
+                }
+            } else {
+                if (option.getWidth() > height && option.getHeight() > width) {
+                    sizeList.add(option);
+                }
+            }
+        }
+        if (sizeList.size() > 0) {
+            return Collections.min(sizeList, new Comparator<Size>() {
+                @Override
+                public int compare(Size lhs, Size rhs) {
+                    return Long.signum(lhs.getWidth() * lhs.getHeight() - rhs.getWidth() * rhs.getHeight());
+                }
+            });
+        }
+        return sizeMap[0];
+    }
+
+    private void configureTextureViewTransform(TextureView textureView,int viewWidth, int viewHeight) {
+        if (null == textureView) {
+            return;
+        }
+        int rotation = 1;/*activity.getWindowManager().getDefaultDisplay().getRotation();*/
+        Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            float scale = Math.max(
+                    (float) viewHeight / mPreviewSize.getHeight(),
+                    (float) viewWidth / mPreviewSize.getWidth());
+            matrix.postScale(scale, scale, centerX, centerY);
+            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        } else if (Surface.ROTATION_180 == rotation) {
+            matrix.postRotate(180, centerX, centerY);
+        }
+        textureView.setTransform(matrix);
+    }
+
+    /**
+     * 将相机输出的预览尺寸和TextureView尺寸对应上，等比拉伸
+     * @param textureView
+     * @param viewWidth
+     * @param viewHeight
+     */
+    private void configureTransform(TextureView textureView,int viewWidth, int viewHeight) {
+        if (null == textureView || null == mPreviewSize) {
+            return;
+        }
+        //屏幕方向
+        //int rotation = windowManager.getDefaultDisplay().getRotation();
+        final Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+        //相机宽度小于界面高度时，使用矩阵缩放适配
+//        if (mPreviewSize.getWidth() < viewHeight) {
+//            LogAppUtil.ShowE(TAG + "矩阵缩放");
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            float scale = Math.max((float) viewHeight / mPreviewSize.getWidth(), (float) viewWidth / mPreviewSize.getHeight());
+            //设置缩放
+            matrix.postScale(scale, scale, centerX, centerY);
+            //设置旋转角度
+            //matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+            matrix.postRotate(180, centerX, centerY);
+//        } else {
+//            LogAppUtil.ShowE(TAG + "条件满足");
+//        }
+        textureView.post(new Runnable() {
+            @Override
+            public void run() {
+                textureView.setTransform(matrix);
+            }
+        });
     }
 
     static class BackgroundHandler extends Handler {
