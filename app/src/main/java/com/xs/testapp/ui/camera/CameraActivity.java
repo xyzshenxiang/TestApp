@@ -30,6 +30,12 @@ public class CameraActivity extends AppCompatActivity {
         Camera2Helper.getInstance().init(getApplicationContext());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Camera2Helper.getInstance().release();
+    }
+
     public void onCamera(View v) {
         if (null == mCameraFragment) {
             mCameraFragment = new CameraFragment();

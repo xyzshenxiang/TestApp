@@ -4,8 +4,8 @@ import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
@@ -16,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.LogUtils;
+import com.bumptech.glide.Glide;
+import com.xs.testapp.databinding.FragmentCamera2HelperBinding;
 import com.xs.testapp.databinding.FragmentCamera2SimpleBinding;
 import com.xs.testapp.ui.base.BaseFragment;
 
@@ -30,48 +32,22 @@ import java.util.Date;
  */
 public class Camera2HelperFragment extends BaseFragment {
 
-    private FragmentCamera2SimpleBinding mBinding;
-
-    private SurfaceView mSurfaceView;
-    private SurfaceHolder mSurfaceHolder;
+    private FragmentCamera2HelperBinding mBinding;
 
     private boolean mIsRecord = false;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        mBinding = FragmentCamera2SimpleBinding.inflate(inflater, container, false);
+        mBinding = FragmentCamera2HelperBinding.inflate(inflater, container, false);
         LogUtils.d("onCreateView");
-//        mSurfaceView = mBinding.surfaceView;
-//        mSurfaceHolder = mSurfaceView.getHolder();
 
         int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-//        Camera2Helper.getInstance().setPreviewSurface(mSurfaceHolder.getSurface());
-
-//        mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
-//            @Override
-//            public void surfaceCreated(SurfaceHolder surfaceHolder) {
-//
-//                Camera2Helper.getInstance().open();
-//            }
-//
-//            @Override
-//            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-//
-//            }
-//
-//            @Override
-//            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-//                Camera2Helper.getInstance().close();
-//            }
-//        });
         Camera2Helper.getInstance().setTextureView(mBinding.tvView);
         mBinding.tvView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-//                configureTextureViewTransform(mBinding.tvView.getWidth(),mBinding.tvView.getHeight());
-//                Camera2Helper.getInstance().setPreviewSurface(new Surface(mBinding.tvView.getSurfaceTexture()));
-                Camera2Helper.getInstance().open(width,height);
+                Camera2Helper.getInstance().openCamera();
             }
 
             @Override
@@ -81,6 +57,7 @@ public class Camera2HelperFragment extends BaseFragment {
 
             @Override
             public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+                Camera2Helper.getInstance().closeCamera();
                 return false;
             }
 
@@ -90,15 +67,29 @@ public class Camera2HelperFragment extends BaseFragment {
             }
         });
 
+        Camera2Helper.getInstance().setTakePictureListener(new Camera2Helper.TakePictureListener() {
+            @Override
+            public void callbackPicture(String image) {
+                mBinding.ivImage.post(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Glide.with(getActivity()).load(image).into(mBinding.ivImage);
+                    }
+                });
+            }
+        });
+
         mBinding.btnOpen.setOnClickListener(v -> {
 
-//            Camera2Helper.getInstance().startPreview();
+
         });
         mBinding.btnTake.setOnClickListener(view -> {
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             String filename = "IMG_" + sdf.format(new Date()) + ".jpg";
-            String path = getContext().getFilesDir().getAbsolutePath();
+
+            String path = Environment.getExternalStorageDirectory().getAbsolutePath();
             File dir = new File(path);
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -120,7 +111,7 @@ public class Camera2HelperFragment extends BaseFragment {
 
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
                 String filename = "VIDEO_" + sdf.format(new Date()) + ".mp4";
-                String path = getContext().getFilesDir().getAbsolutePath();
+                String path = Environment.getExternalStorageDirectory().getAbsolutePath();
                 File dir = new File(path);
                 if (!dir.exists()) {
                     dir.mkdirs();
@@ -132,30 +123,6 @@ public class Camera2HelperFragment extends BaseFragment {
             }
         });
         return mBinding.getRoot();
-    }
-
-    private void configureTextureViewTransform(int viewWidth, int viewHeight) {
-        if (null == mBinding.tvView) {
-            return;
-        }
-        int rotation = 0 ;/*activity.getWindowManager().getDefaultDisplay().getRotation();*/
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-//        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-//        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-//            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-//            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-//            float scale = Math.max(
-//                    (float) viewHeight / mPreviewSize.getHeight(),
-//                    (float) viewWidth / mPreviewSize.getWidth());
-//            matrix.postScale(scale, scale, centerX, centerY);
-//            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-//        }else if (Surface.ROTATION_180 == rotation) {
-            matrix.postRotate(180, centerX, centerY);
-//        }
-        mBinding.tvView.setTransform(matrix);
     }
 
 }
