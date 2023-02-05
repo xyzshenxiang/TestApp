@@ -75,4 +75,10 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.13.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.13.0'
 
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+
+//    implementation('com.aliyun.alink.linksdk:iot-linkkit:1.7.2')
+//    implementation('com.aliyun.alink.linksdk:public-channel-core:0.7.7.1')
+//    implementation('com.aliyun.alink.linksdk:iot-device-manager:1.7.5.3')
 }

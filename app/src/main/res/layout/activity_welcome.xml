@@ -37,4 +37,10 @@
         android:layout_height="wrap_content"
         android:onClick="onClickKey"
         android:text="模拟按键消息" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClickMqtt"
+        android:text="MQTT" />
 </LinearLayout>

@@ -8,12 +8,16 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.ZipUtils;
 import com.xs.testapp.R;
 import com.xs.testapp.ui.anim.AnimationActivity;
 import com.xs.testapp.ui.camera.CameraActivity;
 import com.xs.testapp.ui.keybutton.KeyButtonActivity;
+import com.xs.testapp.ui.mqtt.MqttActivity;
 import com.xs.testapp.ui.navigation.NavigationActivity;
 import com.xs.testapp.ui.watermark.WaterMarkActivity;
+
+import java.io.IOException;
 
 public class WelcomeActivity extends AppCompatActivity {
 
@@ -47,6 +51,11 @@ public class WelcomeActivity extends AppCompatActivity {
 
         startActivity(new Intent(this, KeyButtonActivity.class));
     }
+    public void onClickMqtt(View v) {
+
+        startActivity(new Intent(this, MqttActivity.class));
+    }
+
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
